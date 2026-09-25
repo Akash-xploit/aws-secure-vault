@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+*.tfvars
+!*.tfvars.example
+# NOTE: .terraform.lock.hcl is intentionally committed (pins provider versions)
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+
+# Build artifacts
+*.zip
+dist/
+build/
+node_modules/
+
+# Secrets - never commit
+.env
+.env.*
+*.pem
+*.key
+creds/
+*credentials*.csv

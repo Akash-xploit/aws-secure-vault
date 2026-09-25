@@ -8,7 +8,7 @@ A **serverless, secure file storage system** designed with a strong focus on **c
 
 This system allows authenticated users to securely upload, download, and manage files without exposing backend infrastructure.
 
-![img](AWS_Secure_Vault.png)
+![img](docs/diagrams/architecture-v1.png)
 
 ### ⚙️ Core Services Used
 
