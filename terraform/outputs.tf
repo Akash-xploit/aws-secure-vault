@@ -12,3 +12,13 @@ output "file_table_name" {
   description = "Name of the DynamoDB table that stores file metadata"
   value       = aws_dynamodb_table.files.name
 }
+
+output "user_pool_id" {
+  description = "ID of the Cognito user pool"
+  value       = aws_cognito_user_pool.users.id
+}
+
+output "user_pool_client_id" {
+  description = "ID of the web app client (used by the website)"
+  value       = aws_cognito_user_pool_client.web.id
+}
