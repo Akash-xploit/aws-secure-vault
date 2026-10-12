@@ -1,9 +1,9 @@
-# Cognito login system: user pool (accounts) and web app client (the website).
+# User accounts and the web app client.
 
 resource "aws_cognito_user_pool" "users" {
   name = "${var.project}-users"
 
-  # Email is the username. Changing this later forces the pool (and every user) to be recreated.
+  # Can't be changed later without recreating the pool.
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
 
@@ -16,7 +16,7 @@ resource "aws_cognito_user_pool" "users" {
     temporary_password_validity_days = 7
   }
 
-  # Optional MFA via authenticator app only. No SMS: it costs money and is exposed to SIM swapping.
+  # Authenticator app only; SMS costs money and is open to SIM swapping.
   mfa_configuration = "OPTIONAL"
   software_token_mfa_configuration {
     enabled = true
@@ -34,11 +34,11 @@ resource "aws_cognito_user_pool_client" "web" {
   name         = "${var.project}-web"
   user_pool_id = aws_cognito_user_pool.users.id
 
-  generate_secret               = false # a browser app can't keep a secret
+  generate_secret               = false
   explicit_auth_flows           = ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
   prevent_user_existence_errors = "ENABLED"
 
-  # Short-lived ID/access tokens limit how long a stolen token is useful; refresh keeps users signed in.
+  # Short tokens limit how long a stolen one is useful.
   id_token_validity      = 15
   access_token_validity  = 15
   refresh_token_validity = 7

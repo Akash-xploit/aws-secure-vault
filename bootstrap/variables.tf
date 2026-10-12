@@ -1,5 +1,3 @@
-# variables.tf - INPUTS. Values you might want to change without editing the logic.
-
 variable "region" {
   description = "AWS region for the state bucket"
   type        = string

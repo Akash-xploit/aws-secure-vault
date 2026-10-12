@@ -1,6 +1,4 @@
-# network.tf - Private network for the vault Lambdas.
-# No internet gateway and no NAT: the Lambdas can only reach S3 and DynamoDB
-# through free gateway endpoints.
+# Private network for the Lambdas: no internet gateway or NAT, only S3 and DynamoDB endpoints.
 
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -10,7 +8,7 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Two subnets in two AZs, so the Lambdas keep running if one data center fails.
+# Two AZs so one outage doesn't stop the Lambdas.
 resource "aws_subnet" "private_a" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.1.0/24"
@@ -31,8 +29,7 @@ resource "aws_subnet" "private_b" {
   }
 }
 
-# No route blocks on purpose: only the automatic "local" route plus the
-# endpoints' routes. There is never a route to 0.0.0.0/0.
+# No 0.0.0.0/0 route: only the local route and the endpoint routes.
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
@@ -57,9 +54,7 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_endpoint_type = "Gateway"
   route_table_ids   = [aws_route_table.private.id]
 
-  # Only the vault bucket is reachable through this endpoint, so a compromised
-  # Lambda can't copy files into an attacker-owned bucket. What each Lambda may
-  # do is limited separately by its own IAM role.
+  # Only the vault bucket, so data can't be copied to another bucket.
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -87,7 +82,7 @@ resource "aws_vpc_endpoint" "dynamodb" {
   vpc_endpoint_type = "Gateway"
   route_table_ids   = [aws_route_table.private.id]
 
-  # Only the file metadata table is reachable through this endpoint.
+  # Only the file table.
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -109,8 +104,7 @@ resource "aws_vpc_endpoint" "dynamodb" {
   }
 }
 
-# No ingress rules: nothing calls a Lambda over the network.
-# Terraform removes AWS's default allow-all egress, so only the rules below apply.
+# No ingress. Egress is only HTTPS to the S3 and DynamoDB prefix lists.
 resource "aws_security_group" "lambda" {
   name        = "${var.project}-lambda"
   description = "Vault Lambdas: no inbound, HTTPS out to S3 and DynamoDB only"

@@ -1,4 +1,4 @@
-#This is used for creating a table that has all the metadat of the stored files
+# File catalog: one row per uploaded file.
 
 resource "aws_dynamodb_table" "files" {
   name         = "${var.project}-file-metadata"
@@ -19,9 +19,9 @@ resource "aws_dynamodb_table" "files" {
   point_in_time_recovery {
     enabled = true
   }
+
   server_side_encryption {
     enabled     = true
     kms_key_arn = aws_kms_key.vault.arn
-
   }
 }

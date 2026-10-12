@@ -1,11 +1,9 @@
-# Vault bucket: where users' files are stored.
-# Later additions: CORS (Day 4, needs the website URL), VPC-endpoint-only admin rule (Day 2).
+# User files.
 
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "vault" {
   bucket = "${var.project}-files-${data.aws_caller_identity.current.account_id}"
-  # No prevent_destroy: the project is torn down with `terraform destroy` at the end.
 }
 
 resource "aws_s3_bucket_versioning" "vault" {
@@ -66,8 +64,7 @@ resource "aws_s3_bucket_policy" "vault" {
         }
       },
       {
-        # Rejects uploads that request any key other than the vault key.
-        # Uploads that name no key get the vault key from default encryption (verified with head-object).
+        # Uploads that name no key still get the vault key by default.
         Sid       = "DenyUploadsWithoutVaultKey"
         Effect    = "Deny"
         Principal = "*"
