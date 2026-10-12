@@ -56,7 +56,7 @@ flowchart LR
 | File API Lambdas | ⏳ Next | `listFiles`, `downloadFile`, `deleteFile` with ownership checks from the JWT `sub` | |
 | API Gateway | ⏳ Planned | REST API, Cognito authorizer, throttling, access logs | |
 | Frontend + MFA | ⏳ Planned | Private S3 + CloudFront (OAC), CSP/HSTS headers, **required TOTP MFA** with in-app enrollment | |
-| CI/CD | ⏳ Planned | GitHub Actions with **OIDC (no stored AWS keys)**: gitleaks, Bandit, Semgrep, pytest + moto, Checkov, `terraform plan`/`apply`; Dependabot | |
+| CI/CD | ⏳ Planned | GitHub Actions with **OIDC (no stored AWS keys)**: gitleaks, Bandit, Semgrep, pytest + moto, Checkov, `terraform plan`/`apply`; Dependabot; tests run in the AWS Lambda Python 3.13 container image (Docker) to match production | |
 | Logging & detection | ⏳ Planned | CloudTrail to an Object Lock bucket, CloudWatch alarms, GuardDuty / Security Hub / Config behind a cost flag, EventBridge → SNS | |
 | Response & hardening | ⏳ Planned | **Auto-remediation** (a bucket made public is re-blocked automatically, with an alert), **malware scanning** of uploads (GuardDuty Malware Protection for S3), AWS WAF on the API, a KMS key policy limited to the Lambda roles. Paid services sit behind flags that are off by default | |
 | Attack simulation | ⏳ Planned | Stratus Red Team techniques run against the account, with a detection-coverage report of what was caught and what was missed | |
@@ -105,4 +105,3 @@ screenshots/        Test evidence
 ## 🗺️ Roadmap after v1.0
 
 - File sharing between users: view-only shares by email, revocation checked on every download, optional expiry, no public links, and its own access-control attack tests
-- Custom domain (Route 53 + ACM)
