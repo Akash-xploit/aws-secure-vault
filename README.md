@@ -55,9 +55,11 @@ flowchart LR
 | Upload pipeline (Lambdas) | ✅ Built | `requestUpload` issues a SigV4 pre-signed POST (key `userId/fileId`, 100 MB cap, 5-minute expiry, file name in signed metadata); S3 triggers `onUploadComplete`, which records the file in DynamoDB and ignores reused tickets. Python 3.13 on arm64 in the private subnets, **one least-privilege IAM role per function**, 14-day log retention | [`lambda.tf`](terraform/lambda.tf) · [`iam.tf`](terraform/iam.tf) · [code](backend/functions/) · tests: [ticket](screenshots/day2-upload-1-get-ticket.png), [upload](screenshots/day2-upload-2-post-to-s3-204.png), [KMS](screenshots/day2-upload-3-object-encrypted-kms.png), [catalog](screenshots/day2-upload-4-catalog-row-and-logs.png), [size limit](screenshots/day2-upload-5-too-big-rejected.png), [IAM](screenshots/day2-upload-6-role-least-privilege.png) |
 | File API Lambdas | ⏳ Next | `listFiles`, `downloadFile`, `deleteFile` with ownership checks from the JWT `sub` | |
 | API Gateway | ⏳ Planned | REST API, Cognito authorizer, throttling, access logs | |
-| Frontend | ⏳ Planned | Private S3 + CloudFront (OAC), CSP/HSTS headers | |
-| CI/CD | ⏳ Planned | GitHub Actions with **OIDC (no stored AWS keys)**: gitleaks, Bandit, pytest, Checkov, `terraform plan`/`apply` | |
+| Frontend + MFA | ⏳ Planned | Private S3 + CloudFront (OAC), CSP/HSTS headers, **required TOTP MFA** with in-app enrollment | |
+| CI/CD | ⏳ Planned | GitHub Actions with **OIDC (no stored AWS keys)**: gitleaks, Bandit, Semgrep, pytest + moto, Checkov, `terraform plan`/`apply`; Dependabot | |
 | Logging & detection | ⏳ Planned | CloudTrail to an Object Lock bucket, CloudWatch alarms, GuardDuty / Security Hub / Config behind a cost flag, EventBridge → SNS | |
+| Response & hardening | ⏳ Planned | **Auto-remediation** (a bucket made public is re-blocked automatically, with an alert), **malware scanning** of uploads (GuardDuty Malware Protection for S3), AWS WAF on the API, a KMS key policy limited to the Lambda roles. Paid services sit behind flags that are off by default | |
+| Attack simulation | ⏳ Planned | Stratus Red Team techniques run against the account, with a detection-coverage report of what was caught and what was missed | |
 
 ---
 
@@ -102,8 +104,5 @@ screenshots/        Test evidence
 
 ## 🗺️ Roadmap after v1.0
 
-- Auto-remediation: an EventBridge rule plus a Lambda that re-blocks a bucket if it's made public
-- Attack simulation with Stratus Red Team, and a detection-coverage report
-- AWS WAF on the API (behind a flag)
-- File sharing between users
-- Required MFA
+- File sharing between users: view-only shares by email, revocation checked on every download, optional expiry, no public links, and its own access-control attack tests
+- Custom domain (Route 53 + ACM)
