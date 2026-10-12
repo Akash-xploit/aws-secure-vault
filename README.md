@@ -52,7 +52,8 @@ flowchart LR
 | Identity (Cognito) | ✅ Built | 12-character password policy, optional TOTP MFA (no SMS), user-enumeration protection, 15-minute tokens, refresh-token revocation, SRP login (no client secret in the browser) | [`cognito.tf`](terraform/cognito.tf) · [test](screenshots/day1-cognito-signup-tests.png) |
 | Private network (VPC) | ✅ Built | 2 private subnets in 2 AZs, **no internet gateway or NAT**; S3 and DynamoDB gateway endpoints with **policies restricted to the vault bucket and table**; Lambda security group allows only HTTPS out to those two services | [`network.tf`](terraform/network.tf) · [test](screenshots/day2-network-no-internet.png) |
 | Threat model (STRIDE) | 🟡 In progress | Assets, 9 trust boundaries, 15 threats mapped to controls, accepted risks | [`docs/ThreatModel.md`](docs/ThreatModel.md) |
-| Lambdas + least-privilege IAM | ⏳ Next | `requestUpload`, `onUploadComplete`, `listFiles`, `downloadFile`, `deleteFile` (Python 3.13), one IAM role per function | |
+| Upload pipeline (Lambdas) | ✅ Built | `requestUpload` issues a SigV4 pre-signed POST (key `userId/fileId`, 100 MB cap, 5-minute expiry, file name in signed metadata); S3 triggers `onUploadComplete`, which records the file in DynamoDB and ignores reused tickets. Python 3.13 on arm64 in the private subnets, **one least-privilege IAM role per function**, 14-day log retention | [`lambda.tf`](terraform/lambda.tf) · [`iam.tf`](terraform/iam.tf) · [code](backend/functions/) · tests: [ticket](screenshots/day2-upload-1-get-ticket.png), [upload](screenshots/day2-upload-2-post-to-s3-204.png), [KMS](screenshots/day2-upload-3-object-encrypted-kms.png), [catalog](screenshots/day2-upload-4-catalog-row-and-logs.png), [size limit](screenshots/day2-upload-5-too-big-rejected.png), [IAM](screenshots/day2-upload-6-role-least-privilege.png) |
+| File API Lambdas | ⏳ Next | `listFiles`, `downloadFile`, `deleteFile` with ownership checks from the JWT `sub` | |
 | API Gateway | ⏳ Planned | REST API, Cognito authorizer, throttling, access logs | |
 | Frontend | ⏳ Planned | Private S3 + CloudFront (OAC), CSP/HSTS headers | |
 | CI/CD | ⏳ Planned | GitHub Actions with **OIDC (no stored AWS keys)**: gitleaks, Bandit, pytest, Checkov, `terraform plan`/`apply` | |
@@ -65,7 +66,7 @@ flowchart LR
 - **Identity is the perimeter.** A user's identity comes only from the verified JWT (`sub`), never from request data. Every file operation checks ownership.
 - **Encryption you control.** A customer-managed KMS key encrypts both S3 and DynamoDB, and the bucket policy refuses any upload that asks for a different key. *(Verified: a different key → `AccessDenied`; no key → stored with the vault key.)*
 - **No path to the internet.** The Lambdas run in private subnets with no internet gateway or NAT. They reach S3 and DynamoDB only through gateway endpoints whose policies allow **only this vault's bucket and table**, so a compromised function can't exfiltrate data. *(Verified: no IGW, no NAT, no `0.0.0.0/0` route.)*
-- **Least privilege everywhere.** One IAM role per Lambda. No long-lived access keys: humans use `aws login` with MFA, and CI will use GitHub OIDC.
+- **Least privilege everywhere.** One IAM role per Lambda: the upload role can only put objects and generate a data key, not read or delete. *(Verified with the IAM policy simulator.)* No long-lived access keys: humans use `aws login` with MFA, and CI will use GitHub OIDC.
 - **Threat-model driven.** Controls trace back to STRIDE threats, and deliberate trade-offs are documented as accepted risks.
 
 ---
