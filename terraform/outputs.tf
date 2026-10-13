@@ -37,3 +37,8 @@ output "lambda_security_group_id" {
   description = "ID of lambda security group"
   value       = aws_security_group.lambda.id
 }
+
+output "api_url" {
+  description = "Base URL of the vault API"
+  value       = aws_api_gateway_stage.v1.invoke_url
+}
